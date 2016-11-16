@@ -3,8 +3,6 @@
 
 from __future__ import print_function, unicode_literals
 
-import time
-
 try:
     # py2
     from urllib2 import urlopen
@@ -15,6 +13,7 @@ except ImportError:
     from urllib.request import urlopen, Request
     from urllib.parse import urlencode
 
+import time
 import os
 import json
 import random
@@ -47,8 +46,9 @@ def add_query(code, company=None, label=None):
     :param company: 快递公司
     :param label: 标签
     """
-
     r = kd100_query(code, company=company)
+    if not r:
+        return
     r['label'] = label
     show(r, True)
     # print(r['nu'], r['label'], r['data'][0]['time'], r['data'][0]['context'])
@@ -128,6 +128,7 @@ def kd100_query(code, quite=None, company=None):
         else:
             if not quite:
                 print('Failed.')
+            return None
     else:
         print('\nNo results.')
 
