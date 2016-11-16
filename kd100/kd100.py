@@ -28,7 +28,7 @@ HISTORY = os.path.join(os.path.expanduser('~'), '.kd100')
 
 def save(data):
     with open(HISTORY, 'w', encoding='utf-8') as f:
-        json.dump(data, f)
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 
 def load():
@@ -50,10 +50,11 @@ def add_query(code, company=None, label=None):
 
     r = kd100_query(code, company=company)
     r['label'] = label
-    print(r['nu'], r['label'], r['data'][0]['time'], r['data'][0]['context'])
+    show(r, True)
+    # print(r['nu'], r['label'], r['data'][0]['time'], r['data'][0]['context'])
 
     history = load()
-    history.setdefault(r['nu'], r)
+    history[r['nu']] = r
     save(history)
 
 
@@ -69,34 +70,30 @@ def format_info(data):
     return res
 
 
-def show(data, detail=False):
+def show(record, detail=False):
     if detail:
-        for record in data.values():
-            print(format_info(record))
-        return
-
-    for record in data.values():
-        print(record['nu'], record['label'], record['data'][0]['time'], record['data'][0]['context'])
+        print(format_info(record))
+    else:
+        print('{nu} {label} {com} {data[0][time]} {data[0][context]}'.format(**record))
 
 
 def refresh():
     history = load()
 
     res = {}
-    # todo may be not compatiable with PY2
     for code, record in history.items():
         r = kd100_query(code, company=record['com'])
-        r.setdefault('label', record.setdefault('label', ''))
+        r['label'] = record.setdefault('label', '')
         time.sleep(1)
 
         if r['ischeck'] == '0':
-            res.setdefault(code, r)
+            res[code] = r
 
     save(res)
     return res
 
 
-def kd100_query(code, company=None):
+def kd100_query(code, quite=None, company=None):
     params = urlencode({'num': code})
     guess_url = GUESS.format(params)
 
@@ -106,12 +103,12 @@ def kd100_query(code, company=None):
     else:
         possible_company_name = [str(company)]
 
-    # if not quite:
-    #     print('Possible company:', ', '.join(possible_company_name))
+    if not quite:
+        print('Possible company:', ', '.join(possible_company_name))
 
     for company_name in possible_company_name:
-        # if not quite:
-        #     print('Try', company_name, '...', end='')
+        if not quite:
+            print('Try', company_name, '...', end='')
 
         params = urlencode({
             'type': company_name,
@@ -125,24 +122,14 @@ def kd100_query(code, company=None):
         res = json.loads(urlopen(req).read().decode('utf-8'))
 
         if res['message'] == 'ok':
-            # if not quite:
-            #     print('Done.\n')
+            if not quite:
+                print('Done.\n')
             return res
-
-            # table = format_info(res)
-            # if output:
-            #     with open(output, 'wb') as f:
-            #         f.write(table.encode('utf-8'))
-            #     if not quite:
-            #         print('Result saved to [' + os.path.abspath(output) + '].')
-            # else:
-            #     print(table)
-            # break
-            # else:
-            #     if not quite:
-            #         print('Failed.')
-            # else:
-            #     print('\nNo results.')
+        else:
+            if not quite:
+                print('Failed.')
+    else:
+        print('\nNo results.')
 
 
 def main():
@@ -158,11 +145,10 @@ def main():
     parser.add_argument('-d', '--detail', action='store_true',
                         help='show express detail',
                         default=False)
-    # parser.add_argument('-o', '--output', help='output file')
-    # parser.add_argument('-q', '--quite',
-    #                     help='be quite',
-    #                     action='store_true',
-    #                     default=False)
+    parser.add_argument('-q', '--quite',
+                        help='be quite',
+                        action='store_true',
+                        default=False)
     args = parser.parse_args()
 
     if args.code:
@@ -170,19 +156,9 @@ def main():
         return
 
     data = refresh()
-    show(data, args.detail)
-    # express_code = args.code
-    # if express_code is None:
-    #     while True:
-    #         try:
-    #             express_code = input(
-    #                     'Input your express code: ' if not args.quite else '')
-    #             break
-    #         except ValueError:
-    #             if not args.quite:
-    #                 print('Please input a number')
-
-    # kd100_query(express_code, args.output, args.quite, args.company)
+    print('Latest status:')
+    for record in data.values():
+        show(record, args.detail)
 
 
 if __name__ == '__main__':
