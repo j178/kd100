@@ -26,13 +26,13 @@ HISTORY = os.path.join(os.path.expanduser('~'), '.kd100')
 
 
 def save(data):
-    with open(HISTORY, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    with open(HISTORY, 'wb') as f:
+        f.write(json.dumps(data, f, ensure_ascii=False, indent=2).encode('utf-8'))
 
 
 def load():
     try:
-        with open(HISTORY, encoding='utf-8') as f:
+        with open(HISTORY) as f:
             j = json.load(f)
             return j if isinstance(j, dict) else {}
     except:
