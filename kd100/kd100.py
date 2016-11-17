@@ -58,14 +58,14 @@ def add_query(code, company=None, label=None):
 
 
 def format_info(data):
-    res = 'code: {nu: <20} label: {label: <10} company: {com: <15} ' \
+    res = 'code: {nu: <20} label: {label:<10} company: {com: <15} ' \
           'is checked: {ischeck}\n'.format(**data)
     res += '=' * 75 + '\n'
     res += '{0: ^21}|{1: ^44}\n'.format('time', 'content')
     for item in data['data']:
         res += '-' * 75 + '\n'
         res += '{time: ^21}| {context}\n'.format(**item)
-    res += '=' * 65 + '\n'
+    res += '=' * 75 + '\n'
     return res
 
 
@@ -73,7 +73,7 @@ def show(record, detail=False):
     if detail:
         print(format_info(record))
     else:
-        print('{nu} {label} {com} {data[0][time]} {data[0][context]}'.format(**record))
+        print('{nu:<20} {label:<10} {com:<15} {data[0][time]:^21} {data[0][context]:^44}'.format(**record))
 
 
 def refresh():
@@ -134,9 +134,9 @@ def kd100_query(code, quite=None, company=None):
         else:
             if not quite:
                 print('Failed.')
-            return None
     else:
         print('\nNo results.')
+        return None
 
 
 def main():
