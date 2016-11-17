@@ -16,7 +16,6 @@ except ImportError:
 import time
 import os
 import json
-import random
 import argparse
 
 GUESS = 'http://m.kuaidi100.com/autonumber/auto?{0}'
@@ -80,17 +79,27 @@ def show(record, detail=False):
 def refresh():
     history = load()
 
-    res = {}
+    new_status = {}
     for code, record in history.items():
+
+        # 快递单当前的状态 :
+        # 0：在途，即货物处于运输过程中；
+        # 1：揽件，货物已由快递公司揽收并且产生了第一条跟踪信息；
+        # 2：疑难，货物寄送过程出了问题；
+        # 3：签收，收件人已签收；
+        # 4：退签，即货物由于用户拒签、超区等原因退回，而且发件人已经签收；
+        # 5：派件，即快递正在进行同城派件；
+        # 6：退回，货物正处于退回发件人的途中；
+        if record['state'] in ['3', '4']:
+            continue
+
         r = kd100_query(code, company=record['com'])
         r['label'] = record.setdefault('label', '')
+        new_status[code] = r
         time.sleep(1)
 
-        if r['ischeck'] == '0':
-            res[code] = r
-
-    save(res)
-    return res
+    save(new_status)
+    return new_status
 
 
 def kd100_query(code, quite=None, company=None):
@@ -113,9 +122,6 @@ def kd100_query(code, quite=None, company=None):
         params = urlencode({
             'type': company_name,
             'postid': code,
-            'id': 1,
-            'valicode': '',
-            'temp': random.random()
         })
 
         req = Request(QUERY.format(params), headers={'Referer': guess_url})
